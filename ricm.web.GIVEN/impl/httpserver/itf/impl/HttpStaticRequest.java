@@ -24,9 +24,16 @@ public class HttpStaticRequest extends HttpRequest {
 		String path = m_ressname;
 
 		if (path == null || path.equals("/")) {
-			path = "/" + DEFAULT_FILE;
+			path = "/FILES/" + DEFAULT_FILE;
 		} else if (path.endsWith("/")) {
 			path = path + DEFAULT_FILE;
+		} else {
+			// Remove leading slash to verify in filesystem (example: 8080/FILES instead of 8080/FILES/)
+			String fsPath = path.startsWith("/") ? path.substring(1) : path;
+			File f = new File(fsPath);
+			if (f.isDirectory()) {
+				path = path + "/" + DEFAULT_FILE;
+			}
 		}
 
 		if (path.startsWith("/")) {
