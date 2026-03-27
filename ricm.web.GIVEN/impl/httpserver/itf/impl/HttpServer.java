@@ -9,9 +9,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.StringTokenizer;
 
-import httpserver.itf.HttpRequest;
-import httpserver.itf.HttpResponse;
-import httpserver.itf.HttpRicmlet;
+import httpserver.itf.*;
+
+import java.util.HashMap;
 
 
 /**
@@ -29,6 +29,7 @@ public class HttpServer {
 	private int m_port;
 	private File m_folder;  // default folder for accessing static resources (files)
 	private ServerSocket m_ssoc;
+	private HashMap<String, HttpRicmlet> m_ricmlets = new HashMap<>();
 
 	protected HttpServer(int port, String folderName) {
 		m_port = port;
@@ -53,7 +54,17 @@ public class HttpServer {
 	public HttpRicmlet getInstance(String clsname)
 			throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedURLException, 
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-		throw new Error("No Support for Ricmlets");
+
+		//Check if we can get an instance of "clsname"
+		HttpRicmlet instance = m_ricmlets.get(clsname);
+		if (instance == null) {
+			Class<?> c = Class.forName(clsname);
+			instance = (HttpRicmlet) c.getDeclaredConstructor().newInstance();
+			m_ricmlets.put(clsname, instance);
+		}
+
+		return instance;
+		//throw new Error("No Support for Ricmlets");
 	}
 
 
@@ -69,10 +80,16 @@ public class HttpServer {
 		StringTokenizer parseline = new StringTokenizer(startline);
 		String method = parseline.nextToken().toUpperCase(); 
 		String ressname = parseline.nextToken();
+
 		if (method.equals("GET")) {
-			request = new HttpStaticRequest(this, method, ressname);
-		} else 
+			if (ressname.startsWith("/ricmlets")) {
+				request = new HttpRicmletRequestImpl(this, method, ressname, br);
+			} else{
+				request = new HttpStaticRequest(this, method, ressname);
+			}
+		} else
 			request = new UnknownRequest(this, method, ressname);
+
 		return request;
 	}
 
@@ -81,6 +98,9 @@ public class HttpServer {
 	 * Returns an HttpResponse object associated to the given HttpRequest object
 	 */
 	public HttpResponse getResponse(HttpRequest req, PrintStream ps) {
+		if (req instanceof HttpRicmletRequest) {
+			return new HttpRicmletResponseImpl(this, req, ps);
+		}
 		return new HttpResponseImpl(this, req, ps);
 	}
 

@@ -1,0 +1,77 @@
+package httpserver.itf;
+
+import httpserver.itf.impl.HttpServer;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+public class HttpRicmletRequestImpl extends HttpRicmletRequest {
+    private String m_className;
+    private Map<String, String> m_args = new HashMap<>();
+
+    public HttpRicmletRequestImpl(HttpServer hs, String method, String ressname, BufferedReader br) throws IOException {
+        super(hs, method, ressname, br);
+        parseResources(ressname);
+    }
+
+    private void parseResources(String ressname) {
+        //removing ricmlet (hardcoded)
+        String path = ressname.substring(10);
+
+        //searching for arguments
+        int queryIndex = path.indexOf('?');
+        String classPath;
+        if (queryIndex != -1) {
+            classPath = path.substring(0, queryIndex);
+            String queryString = path.substring(queryIndex + 1);
+            parseArgs(queryString);
+        } else {
+            classPath = path;
+        }
+        m_className = classPath.replace('/', '.');
+    }
+
+    private void parseArgs(String queryString) {
+        //splitting arguments
+        //e.g name=Bob&surname=Marley -> ["name=Bob", "surname=Marley"]
+        String[] pairs = queryString.split("&");
+        for (String pair : pairs) {
+            String[] kv = pair.split("=");
+            if (kv.length == 2) {
+                m_args.put(kv[0], kv[1]); // hashmap: {"name" : "Bob", "surname" : "Marley"}
+            }
+        }
+    }
+
+    @Override
+    public String getArg(String name) {
+        return m_args.get(name); //if no args, return null
+    }
+
+    @Override
+    public void process(HttpResponse resp) throws Exception {
+        try {
+            //confirm singleton -> asks the server for the object that corresponds this class name and verify if any instance exists
+            HttpRicmlet ricmlet = m_hs.getInstance(m_className);
+            ricmlet.doGet(this, (HttpRicmletResponse) resp);
+
+        } catch (ClassNotFoundException e) { //problems to find class
+            resp.setReplyError(404, "Ricmlet not found");
+        } catch (Exception e) {
+            resp.setReplyError(500, "Internal Server Error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public HttpSession getSession() {
+        // Será implementado no Step 4 [cite: 157]
+        return null;
+    }
+
+    @Override
+    public String getCookie(String name) {
+        // Será implementado no Step 3 [cite: 128]
+        return null;
+    }
+}
