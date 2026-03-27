@@ -6,13 +6,43 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+header with cookies
+GET /ricmlets/examples/HelloRicmlet HTTP/1.1
+Cookie: myFirstCookie=123;mySecondCookie=Hello
+Cookie: anotherCookie=45678
+EMPTY LINE
+* */
+
 public class HttpRicmletRequestImpl extends HttpRicmletRequest {
     private String m_className;
     private Map<String, String> m_args = new HashMap<>();
+    private Map<String, String> m_cookies = new HashMap<>();
 
     public HttpRicmletRequestImpl(HttpServer hs, String method, String ressname, BufferedReader br) throws IOException {
         super(hs, method, ressname, br);
         parseResources(ressname);
+        parseHeaders(br);
+    }
+
+    private void parseHeaders(BufferedReader br) throws IOException {
+        String line;
+        //while we don't find the empty line we need to search for cookies
+        while ((line = br.readLine()) != null && !line.equals("")) {
+            if (line.startsWith("Cookie:")) {
+                // removes "Cookie:"
+                String content = line.substring(8);
+
+                //parse different cookies
+                String[] parts = content.split(";");
+                for (String part : parts) {
+                    String[] kv = part.split("=");
+                    if (kv.length == 2) {
+                        m_cookies.put(kv[0].trim(), kv[1].trim());
+                    }
+                }
+            }
+        }
     }
 
     private void parseResources(String ressname) {
@@ -65,13 +95,11 @@ public class HttpRicmletRequestImpl extends HttpRicmletRequest {
 
     @Override
     public HttpSession getSession() {
-        // Será implementado no Step 4 [cite: 157]
         return null;
     }
 
     @Override
     public String getCookie(String name) {
-        // Será implementado no Step 3 [cite: 128]
-        return null;
+        return m_cookies.get(name);
     }
 }

@@ -3,11 +3,14 @@ package httpserver.itf;
 import httpserver.itf.impl.HttpServer;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 public class HttpRicmletResponseImpl implements HttpRicmletResponse {
     private HttpServer m_hs;
     private PrintStream m_ps;
     private HttpRequest m_req;
+    private Map<String, String> m_cookiesToSet = new HashMap<>();
 
     public HttpRicmletResponseImpl(HttpServer hs, HttpRequest req, PrintStream ps) {
         m_hs = hs;
@@ -36,8 +39,19 @@ public class HttpRicmletResponseImpl implements HttpRicmletResponse {
         m_ps.print("Content-Type: " + type + "\r\n");
     }
 
+    /*EXAMPLE
+    HTTP/1.1 200 OK
+    Server: Ricm4HttpServer
+    Set-Cookie: myFirstCookie=123;mySecondCookie=Hello
+    Set-Cookie: anotherCookie=45678
+    ...
+    */
     @Override
     public PrintStream beginBody() throws IOException {
+        for (Map.Entry<String, String> entry : m_cookiesToSet.entrySet()) {
+            m_ps.print("Set-Cookie: " + entry.getKey() + "=" + entry.getValue() + "\r\n");
+        }
+
         m_ps.print("\r\n");//empty line
         m_ps.flush();
         return m_ps;
@@ -45,5 +59,6 @@ public class HttpRicmletResponseImpl implements HttpRicmletResponse {
 
     @Override
     public void setCookie(String name, String value) {
+        m_cookiesToSet.put(name, value);
     }
 }
