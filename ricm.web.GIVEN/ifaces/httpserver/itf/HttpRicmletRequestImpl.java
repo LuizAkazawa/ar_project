@@ -18,6 +18,9 @@ public class HttpRicmletRequestImpl extends HttpRicmletRequest {
     private String m_className;
     private Map<String, String> m_args = new HashMap<>();
     private Map<String, String> m_cookies = new HashMap<>();
+    private HttpSession m_session;
+    /** If non-null, response must emit Set-Cookie for a newly created session. */
+    private String m_newSessionCookieValue;
 
     public HttpRicmletRequestImpl(HttpServer hs, String method, String ressname, BufferedReader br) throws IOException {
         super(hs, method, ressname, br);
@@ -95,7 +98,28 @@ public class HttpRicmletRequestImpl extends HttpRicmletRequest {
 
     @Override
     public HttpSession getSession() {
-        return null;
+        if (m_session != null) {
+            return m_session;
+        }
+        String sid = getCookie(HttpServer.SESSION_COOKIE_NAME);
+        if (sid != null) {
+            HttpSession existing = m_hs.getSessionById(sid);
+            if (existing != null) {
+                m_hs.touchSession(existing);
+                m_session = existing;
+                return m_session;
+            }
+        }
+        m_session = m_hs.createSession();
+        m_newSessionCookieValue = m_session.getId();
+        return m_session;
+    }
+
+    /**
+     * New session id to send as Set-Cookie, or null if the session was already known.
+     */
+    public String getNewSessionCookieValue() {
+        return m_newSessionCookieValue;
     }
 
     @Override

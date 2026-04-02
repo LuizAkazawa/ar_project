@@ -48,6 +48,12 @@ public class HttpRicmletResponseImpl implements HttpRicmletResponse {
     */
     @Override
     public PrintStream beginBody() throws IOException {
+        if (m_req instanceof HttpRicmletRequestImpl) {
+            String v = ((HttpRicmletRequestImpl) m_req).getNewSessionCookieValue();
+            if (v != null) {
+                m_cookiesToSet.put(HttpServer.SESSION_COOKIE_NAME, v);
+            }
+        }
         for (Map.Entry<String, String> entry : m_cookiesToSet.entrySet()) {
             m_ps.print("Set-Cookie: " + entry.getKey() + "=" + entry.getValue() + "\r\n");
         }

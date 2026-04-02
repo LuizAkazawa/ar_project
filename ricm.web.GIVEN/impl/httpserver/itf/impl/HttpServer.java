@@ -8,6 +8,8 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.StringTokenizer;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import httpserver.itf.*;
 
@@ -26,10 +28,17 @@ import java.util.HashMap;
  */
 public class HttpServer {
 
+	/** Cookie name used to carry the server-side session identifier. */
+	public static final String SESSION_COOKIE_NAME = "session-id";
+
+	/** Inactivity period after which a session is discarded (no request referencing it). */
+	private static final long SESSION_TIMEOUT_MS = 30L * 60L * 1000L;
+
 	private int m_port;
 	private File m_folder;  // default folder for accessing static resources (files)
 	private ServerSocket m_ssoc;
 	private HashMap<String, HttpRicmlet> m_ricmlets = new HashMap<>();
+	private final ConcurrentHashMap<String, Session> m_sessions = new ConcurrentHashMap<>();
 
 	protected HttpServer(int port, String folderName) {
 		m_port = port;
@@ -43,6 +52,63 @@ public class HttpServer {
 			System.out.println("HttpServer Exception:" + e );
 			System.exit(1);
 		}
+		startSessionCleanupThread();
+	}
+
+	private void startSessionCleanupThread() {
+		Thread t = new Thread(() -> {
+			while (!Thread.interrupted()) {
+				try {
+					Thread.sleep(60_000L);
+				} catch (InterruptedException e) {
+					break;
+				}
+				removeExpiredSessions();
+			}
+		}, "http-session-cleanup");
+		t.setDaemon(true);
+		t.start();
+	}
+
+	private boolean isExpired(Session s) {
+		return System.currentTimeMillis() - s.getLastAccessTime() > SESSION_TIMEOUT_MS;
+	}
+
+	/**
+	 * Removes sessions that have not been touched within the timeout window.
+	 */
+	public void removeExpiredSessions() {
+		long now = System.currentTimeMillis();
+		m_sessions.entrySet().removeIf(e -> now - e.getValue().getLastAccessTime() > SESSION_TIMEOUT_MS);
+	}
+
+	/**
+	 * Returns the live session for this id, or null if unknown or expired.
+	 */
+	public HttpSession getSessionById(String id) {
+		if (id == null) {
+			return null;
+		}
+		Session s = m_sessions.get(id);
+		if (s == null) {
+			return null;
+		}
+		if (isExpired(s)) {
+			m_sessions.remove(id, s);
+			return null;
+		}
+		return s;
+	}
+
+	public void touchSession(HttpSession session) {
+		((Session) session).touch();
+	}
+
+	public HttpSession createSession() {
+		String id = UUID.randomUUID().toString();
+		Session s = new Session(id);
+		m_sessions.put(id, s);
+		return s;
 	}
 	
 	public File getFolder() {
