@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import httpserver.itf.*;
 
-import java.util.HashMap;
 
 
 /**
@@ -37,7 +36,7 @@ public class HttpServer {
 	private int m_port;
 	private File m_folder;  // default folder for accessing static resources (files)
 	private ServerSocket m_ssoc;
-	private HashMap<String, HttpRicmlet> m_ricmlets = new HashMap<>();
+	private final ConcurrentHashMap<String, HttpRicmlet> m_ricmlets = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, Session> m_sessions = new ConcurrentHashMap<>();
 
 	protected HttpServer(int port, String folderName) {
@@ -118,19 +117,20 @@ public class HttpServer {
 	
 
 	public HttpRicmlet getInstance(String clsname)
-			throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedURLException, 
+			throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedURLException,
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 
-		//Check if we can get an instance of "clsname"
-		HttpRicmlet instance = m_ricmlets.get(clsname);
-		if (instance == null) {
+		HttpRicmlet existing = m_ricmlets.get(clsname);
+		if (existing != null) return existing;
+		synchronized (m_ricmlets) {
+			existing = m_ricmlets.get(clsname);
+			// covers the case when the two threads passed through the verification at the same time
+			if (existing != null) return existing;
 			Class<?> c = Class.forName(clsname);
-			instance = (HttpRicmlet) c.getDeclaredConstructor().newInstance();
+			HttpRicmlet instance = (HttpRicmlet) c.getDeclaredConstructor().newInstance();
 			m_ricmlets.put(clsname, instance);
+			return instance;
 		}
-
-		return instance;
-		//throw new Error("No Support for Ricmlets");
 	}
 
 
