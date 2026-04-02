@@ -10,7 +10,6 @@ import httpserver.itf.HttpRicmletResponse;
 import httpserver.itf.HttpSession;
 
 public class CountBySessionRicmlet implements httpserver.itf.HttpRicmlet{
-	HashMap<String,Integer> counts = new HashMap<String,Integer>();
 	
 	/*
 	 * Print the number of time this ricmlet has been invoked per user session
@@ -29,6 +28,6 @@ public class CountBySessionRicmlet implements httpserver.itf.HttpRicmlet{
 		ps.print("<BODY><H4> Hello for the " + s.getValue("counter") + " times !!!");
 		ps.println("</H4></BODY></HTML>");
 		ps.println();
-}
+	}
 
 }
