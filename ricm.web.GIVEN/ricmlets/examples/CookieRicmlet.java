@@ -14,13 +14,16 @@ public class CookieRicmlet implements httpserver.itf.HttpRicmlet{
 	public void doGet(HttpRicmletRequest req,  HttpRicmletResponse resp) throws IOException {
 
 		String myFirstCookie = req.getCookie("MyFirstCookie");
-		if (myFirstCookie == null) 
-			resp.setCookie("MyFirstCookie", "1");
-		else {
-			int n =  Integer.valueOf(myFirstCookie);
-				// modify the cookie's value each time the ricmlet is invoked
-				resp.setCookie("MyFirstCookie", new Integer(n+1).toString());
+		int nextValue = 1;
+
+		if (myFirstCookie != null) {
+			try {
+				nextValue = Integer.parseInt(myFirstCookie) + 1;
+			} catch (NumberFormatException e) {
+				nextValue = 1;
+			}
 		}
+		resp.setCookie("MyFirstCookie", String.valueOf(nextValue));
 	
 		resp.setReplyOk();
 		resp.setContentType("text/html");
