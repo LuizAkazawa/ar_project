@@ -105,13 +105,15 @@ public class HttpRicmletRequestImpl extends HttpRicmletRequest {
         if (sid != null) {
             HttpSession existing = m_hs.getSessionById(sid);
             if (existing != null) {
+                //renovate timer
                 m_hs.touchSession(existing);
                 m_session = existing;
                 return m_session;
             }
         }
+        //session not found, create a new one
         m_session = m_hs.createSession();
-        m_newSessionCookieValue = m_session.getId();
+        m_newSessionCookieValue = m_session.getId(); //send session id to browser
         return m_session;
     }
 

@@ -36,6 +36,7 @@ public class HttpServer {
 	private int m_port;
 	private File m_folder;  // default folder for accessing static resources (files)
 	private ServerSocket m_ssoc;
+	//concurrent hashmap to store the ricmlets and sessions beacuse multiple threads access these maps
 	private final ConcurrentHashMap<String, HttpRicmlet> m_ricmlets = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, Session> m_sessions = new ConcurrentHashMap<>();
 

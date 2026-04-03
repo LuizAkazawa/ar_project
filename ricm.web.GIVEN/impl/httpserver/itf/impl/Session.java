@@ -12,6 +12,7 @@ public class Session implements HttpSession {
 
 	private final String m_id;
 	private final Map<String, Object> m_values = new HashMap<>();
+	//cleanup thread reads this, so has to be volatile
 	private volatile long m_lastAccessTime;
 
 	public Session(String id) {
@@ -32,6 +33,7 @@ public class Session implements HttpSession {
 		return m_id;
 	}
 
+	//thread safety pour le map m_values
 	@Override
 	public synchronized Object getValue(String key) {
 		return m_values.get(key);
