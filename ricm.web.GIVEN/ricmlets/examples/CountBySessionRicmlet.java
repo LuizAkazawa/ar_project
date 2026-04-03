@@ -19,7 +19,7 @@ public class CountBySessionRicmlet implements httpserver.itf.HttpRicmlet{
 		HttpSession s = req.getSession();
 		Integer c = (Integer) s.getValue("counter");
 		if (c == null)
-			s.setValue("counter", new Integer(0));
+			s.setValue("counter", new Integer(1));
 		else s.setValue("counter", new Integer(c.intValue()+1));
 		resp.setReplyOk();
 		resp.setContentType("text/html");
