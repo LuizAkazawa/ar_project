@@ -28,7 +28,7 @@ public class HttpStaticRequest extends HttpRequest {
 		} else if (path.endsWith("/")) {
 			path = path + DEFAULT_FILE;
 		} else {
-			// Remove leading slash to verify in filesystem (example: 8080/FILES instead of 8080/FILES/)
+			// Remove leading slash to verify in filesystem (example: FILES instead of /FILES)
 			String fsPath = path.startsWith("/") ? path.substring(1) : path;
 			File f = new File(fsPath);
 			if (f.isDirectory()) {
@@ -36,6 +36,7 @@ public class HttpStaticRequest extends HttpRequest {
 			}
 		}
 
+		//removes '/' to adequate with relative path
 		if (path.startsWith("/")) {
 			path = path.substring(1);
 		}
@@ -47,12 +48,14 @@ public class HttpStaticRequest extends HttpRequest {
 			return;
 		}
 
+		//HEADER
 		resp.setReplyOk();
 		resp.setContentType(HttpRequest.getContentType(file.getName()));
 		resp.setContentLength((int) file.length());
 
 		PrintStream ps = resp.beginBody();
 
+		//opens the file and copies it's content to the body in blocks of 8KB
 		FileInputStream fis = new FileInputStream(file);
 		try {
 			byte[] buffer = new byte[8192];
